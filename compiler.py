@@ -525,7 +525,7 @@ class Parser:
       if self.peek(1, Lexer.NewLineToken):
         self.consume(Lexer.NewLineToken)
         self.consume(Lexer.BlockQuoteToken)
-        nodes.append(Parser.ASTTextNode(text=' ', bold=True, italic=True))
+        nodes.append(Parser.ASTTextNode(text=' ', bold=False, italic=False))
         
       nodes.append(self.parse_inline_single())
     self.consume(Lexer.NewLineToken)
