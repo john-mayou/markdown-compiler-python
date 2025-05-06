@@ -647,7 +647,7 @@ class CodeGen:
     return f'<a href="{self.escape_html(node.href)}">{self.escape_html(node.text)}</a>'
   
   def gen_code_inline(self, node: Parser.ASTCodeInlineNode) -> str:
-    return f'<code class"{self.escape_html(node.lang)}">{node.code}</code>'
+    return f'<code class="{self.escape_html(node.lang)}">{node.code}</code>'
   
   def gen_paragraph(self, node: Parser.ASTParagraphNode) -> str:
     return f'<p>{self.gen_line(node.children)}</p>'
