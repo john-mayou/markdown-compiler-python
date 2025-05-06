@@ -136,7 +136,7 @@ class Lexer:
     return True
   
   def try_tokenize_block_quote(self) -> bool:
-    match = re.match(r"\A(<(?: >)* ?).*$", self.md)
+    match = re.match(r"\A(>(?: >)* ?)", self.md)
     if not match: return False
     
     indent = 0
