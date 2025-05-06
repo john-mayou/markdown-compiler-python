@@ -10,8 +10,15 @@ check_in_venv:
 venv:
 	@echo "Creating virtual environment..."
 	@python3.13 -m venv .venv
+	@echo "Installing dependencies..."
+	@.venv/bin/pip install -r requirements.txt
 	@echo "Done. Now run: source .venv/bin/activate"
 	@echo "To leave the environment run: deactivate"
+
+# ----- Api -----
+
+api: check_in_venv
+	fastapi dev main.py
 
 # ----- Testing -----
 
