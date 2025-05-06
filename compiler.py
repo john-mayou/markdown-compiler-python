@@ -601,7 +601,7 @@ class CodeGen:
     return ''.join(self.html)
   
   def gen_header(self, node: Parser.ASTHeaderNode) -> str:
-    return f'<h{node.size}>{self.gen_line(node.children)}<h{node.size}>'
+    return f'<h{node.size}>{self.gen_line(node.children)}</h{node.size}>'
   
   def gen_code_block(self, node: Parser.ASTCodeBlockNode) -> str:
     return f'<pre><code class="{self.escape_html(node.lang)}">{node.code}</code></pre>'
