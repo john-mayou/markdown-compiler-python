@@ -1,1 +1,0 @@
-pytest -s -vv compiler_test.py
