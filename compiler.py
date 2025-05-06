@@ -216,7 +216,7 @@ class Lexer:
       return
     if self.md[0] == '\n': # already at end of line
       self.tks.append(Lexer.NewLineToken())
-      self.md = self.md[1]
+      self.md = self.md[1:]
       return
     
     # find current line
