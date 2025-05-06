@@ -556,3 +556,139 @@ class Parser:
       raise RuntimeError(f"Expected to find token type {tokenType} but found {type(token)}")
     
     return token
+  
+class CodeGen:
+  def __init__(self, ast: Parser.ASTRootNode) -> None:
+    self.ast = ast
+    self.html: list[str] = []
+    
+  def gen(self) -> str:
+    for node in self.ast.children:
+      if isinstance(node, Parser.ASTHeaderNode):
+        self.html.append(self.gen_header(node))
+      elif isinstance(node, Parser.ASTCodeBlockNode):
+        self.html.append(self.gen_code_block(node))
+      elif isinstance(node, Parser.ASTQuoteNode):
+        self.html.append(self.gen_quote_block(node))
+      elif isinstance(node, Parser.ASTListNode):
+        self.html.append(self.gen_list(node))
+      elif isinstance(node, Parser.ASTHorizontalRuleNode):
+        self.html.append(self.gen_horizontal_rule(node))
+      elif isinstance(node, Parser.ASTImageNode):
+        self.html.append(self.gen_image(node))
+      elif isinstance(node, Parser.ASTLinkNode):
+        self.html.append(self.gen_link(node))
+      elif isinstance(node, Parser.ASTCodeInlineNode):
+        self.html.append(self.gen_code_inline(node))
+      elif isinstance(node, Parser.ASTParagraphNode):
+        self.html.append(self.gen_paragraph(node))
+      else:
+        raise RuntimeError(f"Invalid node type: {node}")
+    
+    return ''.join(self.html)
+  
+  def gen_header(self, node: Parser.ASTHeaderNode) -> str:
+    return f'<h{node.size}>{self.gen_line(node.children)}<h{node.size}>'
+  
+  def gen_code_block(self, node: Parser.ASTCodeBlockNode) -> str:
+    return f'<pre><code class="{self.escape_html(node.lang)}">{node.code}</code></pre>'
+  
+  def gen_quote_block(self, node: Parser.ASTQuoteNode) -> str:
+    html: list[str] = ['<blockquote>']
+    
+    for child in node.children:
+      if isinstance(child, Parser.ASTQuoteNode):
+        html.append(self.gen_quote_block(node))
+      elif isinstance(child, Parser.ASTQuoteItemNode):
+        html.append(f"<p>{self.gen_line(child.children)}</p>")
+      else:
+        raise RuntimeError(f"Invalid child node: {child}")
+      
+    html.append('</blockquote>')
+    return ''.join(html)
+  
+  def gen_list(self, node: Parser.ASTListNode) -> str:
+    html: list[str] = ['<ol>'] if node.ordered else ['<ul>']
+    
+    for child in node.children:
+      html.append("<li>")
+      if not isinstance(child, Parser.ASTListItemNode):
+        raise RuntimeError("Invalid child type of list node: {type(child)}")
+      for inner_child in child.children:
+        if isinstance(inner_child, Parser.ASTListNode):
+          html.append(self.gen_list(inner_child))
+        else:
+          html.append(self.gen_line([inner_child]))
+      html.append("</li>")
+    
+    html.append('</ol>' if node.ordered else '</ul>')
+    return ''.join(html)
+  
+  def gen_horizontal_rule(self, node: Parser.ASTHorizontalRuleNode) -> str:
+    return '<hr>'
+  
+  def gen_image(self, node: Parser.ASTImageNode) -> str:
+    return f'<img alt="{self.escape_html(node.alt)}" src="{self.escape_html(node.src)}"/>'
+  
+  def gen_link(self, node: Parser.ASTLinkNode) -> str:
+    return f'<a href="{self.escape_html(node.href)}">{self.escape_html(node.text)}</a>'
+  
+  def gen_code_inline(self, node: Parser.ASTCodeInlineNode) -> str:
+    return f'<code class"{self.escape_html(node.lang)}">{node.code}</code>'
+  
+  def gen_paragraph(self, node: Parser.ASTParagraphNode) -> str:
+    return f'<p>{self.gen_line(node.children)}</p>'
+  
+  def gen_line(self, nodes: list[Parser.ASTNode]) -> str:
+    html: list[str] = []
+    
+    for node in nodes:
+      if isinstance(node, Parser.ASTLinkNode):
+        html.append(self.gen_link(node))
+      elif isinstance(node, Parser.ASTCodeInlineNode):
+        html.append(self.gen_code_inline(node))
+      elif isinstance(node, Parser.ASTTextNode):
+        html.append(self.gen_text(node))
+      else:
+        raise RuntimeError(f"Invalid inline node: {node}")
+      
+    return ''.join(html)
+  
+  def gen_text(self, node: Parser.ASTTextNode) -> str:
+    html: list[str] = []
+    
+    if node.italic:
+      html.append('<i>')
+    if node.bold:
+      html.append('<b>')
+    
+    html.append(self.escape_html(node.text))
+    
+    if node.bold:
+      html.append('</b>')
+    if node.italic:
+      html.append('</i>')
+    
+    return ''.join(html)
+  
+  ESCAPE_HTML_MAP: dict[str, str] = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '"': '&quot;',
+  }
+  
+  def escape_html(self, string: str) -> str:
+    # wait until we know we need a replacement before creating new string object and allocating an array
+    new_html: Union[list[str], None] = None
+    
+    for i in range(len(string)):
+      replacement = CodeGen.ESCAPE_HTML_MAP.get(string[i])
+      if replacement:
+        if new_html is None:
+          new_html = [string[:i + 1]] # copy everything up to first replacement
+        new_html.append(replacement)
+      elif new_html:
+        new_html.append(string[i])
+        
+    return ''.join(new_html) if new_html else string

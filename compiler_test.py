@@ -21,3 +21,14 @@ def test_parser() -> None:
       ])
     ])
   )
+  
+def test_code_gen() -> None:
+  assert(
+    compiler.CodeGen(
+      compiler.Parser.ASTRootNode(children=[
+        compiler.Parser.ASTParagraphNode(children=[
+          compiler.Parser.ASTTextNode(text='text', bold=False, italic=False)
+        ])
+      ])
+    ).gen() == '<p>text</p>'
+  )
