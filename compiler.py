@@ -150,12 +150,12 @@ class Lexer:
     return True
   
   def try_tokenize_horizontal_rule(self) -> bool:
-    match = re.match(r"\A(\*{3,}[\* ]*|-{3,}[- ]*)$", self.md)
+    match = re.match(r"\A(?:\*{3,}\**|-{3,}-*)\s*$", self.md, re.MULTILINE)
     if not match: return False
     
     self.tks.append(Lexer.HorizontalRuleToken())
     self.tks.append(Lexer.NewLineToken())
-    self.md = self.md[len(match.group(1)) + 1:] # 1 = new line
+    self.del_current_line()
     
     return True
   
