@@ -2,7 +2,7 @@ import compiler
 
 def test_lexer_paragraph() -> None:
   assert(
-    compiler.Lexer('text').tokenize() ==
+    compiler.Compiler().tokenize('text') ==
     [
       compiler.Lexer.TextToken(text='text', bold=False, italic=False),
       compiler.Lexer.NewLineToken()
@@ -11,10 +11,10 @@ def test_lexer_paragraph() -> None:
   
 def test_parser() -> None:
   assert(
-    compiler.Parser([
+    compiler.Compiler().parse([
       compiler.Lexer.TextToken(text='text', bold=False, italic=False),
       compiler.Lexer.NewLineToken()
-    ]).parse() ==
+    ]) ==
     compiler.Parser.ASTRootNode(children=[
       compiler.Parser.ASTParagraphNode(children=[
         compiler.Parser.ASTTextNode(text='text', bold=False, italic=False)
@@ -24,11 +24,11 @@ def test_parser() -> None:
   
 def test_code_gen() -> None:
   assert(
-    compiler.CodeGen(
+    compiler.Compiler().gen(
       compiler.Parser.ASTRootNode(children=[
         compiler.Parser.ASTParagraphNode(children=[
           compiler.Parser.ASTTextNode(text='text', bold=False, italic=False)
         ])
       ])
-    ).gen() == '<p>text</p>'
+    ) == '<p>text</p>'
   )

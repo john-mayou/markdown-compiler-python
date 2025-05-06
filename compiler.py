@@ -3,6 +3,19 @@ from dataclasses import dataclass, field
 from typing import Type, TypeVar, Union
 import re
 
+class Compiler():
+  def compile(self, md: str) -> str:
+    return self.gen(self.parse(self.tokenize(md)))
+  
+  def tokenize(self, md: str) -> list[Lexer.Token]:
+    return Lexer(md).tokenize()
+  
+  def parse(self, tks: list[Lexer.Token]) -> Parser.ASTRootNode:
+    return Parser(tks).parse()
+  
+  def gen(self, ast: Parser.ASTRootNode) -> str:
+    return CodeGen(ast).gen()
+
 class Lexer:
   
   LIST_INDENT_SIZE = 2
