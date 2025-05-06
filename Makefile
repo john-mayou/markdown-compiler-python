@@ -1,4 +1,4 @@
-.PHONY: ensure_in_venv venv test lint
+.PHONY: ensure_in_venv venv test test-update lint
 
 # ----- Checks -----
 
@@ -15,8 +15,13 @@ venv:
 
 # ----- Testing -----
 
+TEST = pytest -s -vv *_test.py
+
 test: check_in_venv
-	pytest -s -vv *_test.py
+	$(TEST)
+
+test-update: check_in_venv
+	UPDATE=true $(TEST)
 
 # ----- Linting -----
 
