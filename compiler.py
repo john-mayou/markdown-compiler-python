@@ -1,5 +1,6 @@
-from dataclasses import dataclass
-from typing import Union
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Type, TypeVar, Union
 import re
 
 class Lexer:
@@ -52,7 +53,8 @@ class Lexer:
   @dataclass  
   class NewLineToken: pass
   
-  Token = Union[HeaderToken, TextToken, ListItemToken, CodeBlockToken, CodeInlineToken, BlockQuoteToken, ImageToken, LinkToken, HorizontalRuleToken, NewLineToken]
+  Token = Union[HeaderToken, TextToken, ListItemToken, CodeBlockToken, CodeInlineToken,
+                BlockQuoteToken, ImageToken, LinkToken, HorizontalRuleToken, NewLineToken]
   
   def __init__(self, md: str) -> None:
     self.md = md
@@ -60,7 +62,6 @@ class Lexer:
     
   def tokenize(self) -> list[Token]:
     while self.md:
-      print('here')
       if self.try_tokenize_header(): continue
       if self.try_tokenize_code_block(): continue
       if self.try_tokenize_block_quote(): continue
@@ -92,30 +93,30 @@ class Lexer:
     match = re.match(r"\A```(.*?)\s*\n", self.md)
     if not match: return False
     
-    codeStart = 0
+    code_start = 0
     while True:
-      codeStart += 1
-      if codeStart >= len(self.md):
+      code_start += 1
+      if code_start >= len(self.md):
         return False # no ending to code block
-      if self.md[codeStart] == '\n':
-        codeStart += 1
+      if self.md[code_start] == '\n':
+        code_start += 1
         break
     
-    codeEnd = codeStart
+    code_end = code_start
     while True:
-      if codeEnd + 2 >= len(self.md):
+      if code_end + 2 >= len(self.md):
         return False # no ending to code block
-      if self.md[codeEnd] == '`' and self.md[codeEnd + 1] == '`' and self.md[codeEnd + 2]:
-        codeEnd -= 2 # go backwards through `, \n
+      if self.md[code_end] == '`' and self.md[code_end + 1] == '`' and self.md[code_end + 2]:
+        code_end -= 2 # go backwards through `, \n
         break
-      codeEnd += 1
+      code_end += 1
       
     # make sure we haven't altered self.md up until this point since we need to ensure there
     # is an ending block. If there is no ending block, we would have returned False somewhere
     # above. In that case, we should try tokenizing a different token with the original self.md.
     
-    code = self.md[codeStart: codeEnd + 1]
-    self.md = self.md[codeEnd + 4:] # move to after the ```
+    code = self.md[code_start: code_end + 1]
+    self.md = self.md[code_end + 4:] # move to after the ```
     self.tks.append(Lexer.CodeBlockToken(lang=match.group(1) or "", code=code))
     self.tks.append(Lexer.NewLineToken())
     
@@ -173,13 +174,13 @@ class Lexer:
     pointer = 0
     while self.md[pointer] != '\n':
       pointer += 1
-    hsizeCh = self.md[pointer + 1] # go to beginning of next line
-    if hsizeCh == '=':
+    hsize_ch = self.md[pointer + 1] # go to beginning of next line
+    if hsize_ch == '=':
       self.tks.append(Lexer.HeaderToken(size=1))
-    elif hsizeCh == '-':
+    elif hsize_ch == '-':
       self.tks.append(Lexer.HeaderToken(size=2))
     else:
-      raise RuntimeError(f"Invalid char found for header alt: {hsizeCh}")
+      raise RuntimeError(f"Invalid char found for header alt: {hsize_ch}")
       
     self.tokenize_current_line()
     self.del_current_line() # ---/=== line
@@ -206,27 +207,27 @@ class Lexer:
       return
     
     # find current line
-    lineEnd = 0
+    line_end = 0
     while True:
-      lineEnd += 1
-      if lineEnd == len(self.md): # EOF
+      line_end += 1
+      if line_end == len(self.md): # EOF
         break
-      if self.md[lineEnd] == '\n':
+      if self.md[line_end] == '\n':
         break
-    line = self.md[:lineEnd + 1]
+    line = self.md[:line_end + 1]
     self.md = self.md[len(line):]
     
     # keep track of current substring
-    currStr: list[str] = []
-    def currPush() -> None:
-      self.tks.append(Lexer.TextToken(text=''.join(currStr), bold=False, italic=False))
-      currStr.clear()
+    curr_str: list[str] = []
+    def curr_push() -> None:
+      self.tks.append(Lexer.TextToken(text=''.join(curr_str), bold=False, italic=False))
+      curr_str.clear()
     
     while line:
       # == bold and italic ==
       match = re.match(r"\A(\*{3}[^\*]+?\*{3}|_{3}[^_]+?_{3})", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=True, italic=True))
         line = line[len(match.group(1)):]
@@ -236,7 +237,7 @@ class Lexer:
       # == bold ==
       match = re.match(r"\A(\*{2}[^\*]+?\*{2}|_{2}[^_]+?_{2})", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=True, italic=False))
         line = line[len(match.group(1)):]
@@ -246,7 +247,7 @@ class Lexer:
       # == italic ==
       match = re.match(r"\A(\*[^\*]+?\*|_[^_]+?_)", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=False, italic=True))
         line = line[len(match.group(1)):]
@@ -256,7 +257,7 @@ class Lexer:
       # == image ==
       match = re.match(r"\A!\[(.*)\]\((.*)\)", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.ImageToken(alt=match.group(1), src=match.group(2)))
         line = line[len(match.group(1)) + len(match.group(2)) + 5:] # 5 = ![]()
@@ -266,7 +267,7 @@ class Lexer:
       # == link ==
       match = re.match(r"\A\[(.*)\]\((.*)\)", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.LinkToken(text=match.group(1), href=match.group(2)))
         line = line[len(match.group(1)) + len(match.group(2)) + 4:] # 4 = []()
@@ -276,7 +277,7 @@ class Lexer:
       # == code ==
       match = re.match(r"\A`(.+?)`([a-z]*)", line)
       if match:
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         code = match.group(1)
         lang = match.group(2) or ""
@@ -287,16 +288,16 @@ class Lexer:
       
       # == new line ==
       if line[0] == '\n':
-        if currStr: currPush()
+        if curr_str: curr_push()
         
         self.tks.append(Lexer.NewLineToken())
         break
       
       # == default ==
-      currStr.append(line[0])
+      curr_str.append(line[0])
       line = line[1:]
       
-    if currStr: currPush()
+    if curr_str: curr_push()
     
   def del_current_line(self) -> None:
     pointer = 0
@@ -308,3 +309,250 @@ class Lexer:
       if self.md[pointer] == '\n':
         self.md = self.md[pointer + 1:]
         break
+      
+class Parser:
+  
+  @dataclass
+  class ASTRootNode:
+    children: list[Parser.ASTNode] = field(default_factory=list)
+    
+  @dataclass
+  class ASTHeaderNode:
+    size: int
+    children: list[Parser.ASTNode] = field(default_factory=list)
+  
+  @dataclass
+  class ASTCodeBlockNode:
+    lang: str
+    code: str
+  
+  @dataclass
+  class ASTCodeInlineNode:
+    lang: str
+    code: str
+  
+  @dataclass
+  class ASTQuoteNode:
+    children: list[Parser.ASTNode]
+  
+  @dataclass
+  class ASTQuoteItemNode:
+    children: list[Parser.ASTNode] = field(default_factory=list)
+  
+  @dataclass
+  class ASTParagraphNode:
+    children: list[Parser.ASTNode] = field(default_factory=list)
+  
+  @dataclass
+  class ASTTextNode:
+    text: str
+    bold: bool
+    italic: bool
+  
+  @dataclass
+  class ASTHorizontalRuleNode: pass
+  
+  @dataclass
+  class ASTImageNode:
+    alt: str
+    src: str
+  
+  @dataclass
+  class ASTLinkNode:
+    text: str
+    href: str
+  
+  @dataclass
+  class ASTListNode:
+    ordered: bool
+    children: list[Parser.ASTNode] = field(default_factory=list)
+  
+  @dataclass
+  class ASTListItemNode:
+    children: list[Parser.ASTNode] = field(default_factory=list)
+    
+  ASTNode = Union[ASTRootNode, ASTHeaderNode, ASTCodeBlockNode, ASTCodeInlineNode, ASTQuoteNode,
+                  ASTQuoteItemNode, ASTParagraphNode, ASTTextNode, ASTHorizontalRuleNode,
+                  ASTImageNode, ASTLinkNode, ASTListNode, ASTListItemNode]
+  
+  def __init__(self, tks: list[Lexer.Token]) -> None:
+    self.tks = tks
+    self.tks_start = 0
+    self.root = Parser.ASTRootNode()
+    
+  def parse(self) -> Parser.ASTRootNode:
+    while self.tks_start < len(self.tks):
+      if self.peek(1, Lexer.HeaderToken):
+        self.root.children.append(self.parse_header())
+      elif self.peek(1, Lexer.CodeBlockToken):
+        self.root.children.append(self.parse_code_block())
+      elif self.peek(1, Lexer.BlockQuoteToken):
+        self.root.children.append(self.parse_block_quote())
+      elif self.peek(1, Lexer.HorizontalRuleToken):
+        self.root.children.append(self.parse_horizontal_rule())
+      elif self.peek(1, Lexer.ListItemToken):
+        self.root.children.append(self.parse_list())
+      elif self.peek(1, Lexer.ImageToken):
+        self.root.children.append(self.parse_image())
+      elif self.peek_any(1, Lexer.TextToken, Lexer.CodeInlineToken, Lexer.LinkToken):
+        self.root.children.append(self.parse_paragraph())
+      elif self.peek(1, Lexer.NewLineToken):
+        self.consume(Lexer.NewLineToken)
+      else:
+        raise RuntimeError(f"Invalid token to parse:\n{self.tks[self.tks_start]}")
+    
+    return self.root
+  
+  def parse_header(self) -> Parser.ASTHeaderNode:
+    token = self.consume(Lexer.HeaderToken)
+    return Parser.ASTHeaderNode(size=token.size, children=self.parse_inline())
+  
+  def parse_code_block(self) -> Parser.ASTCodeBlockNode:
+    token = self.consume(Lexer.CodeBlockToken)
+    self.consume(Lexer.NewLineToken)
+    return Parser.ASTCodeBlockNode(lang=token.lang, code=token.code)
+  
+  def parse_block_quote(self) -> Parser.ASTQuoteNode:
+    root_indent = self.consume(Lexer.BlockQuoteToken).indent
+    root_node = Parser.ASTQuoteNode(children=[self.parse_quote_item()])
+    
+    node_indent_map = {root_indent: root_node}
+    while self.peek(1, Lexer.BlockQuoteToken):
+      token = self.consume(Lexer.BlockQuoteToken)
+      if self.peek(1, Lexer.NewLineToken):
+        self.consume(Lexer.NewLineToken)
+        continue
+      
+      node = node_indent_map.get(token.indent)
+      if node:
+        node.children.append(self.parse_quote_item())
+      else:
+        node = Parser.ASTQuoteNode(children=[self.parse_quote_item()])
+        node_indent_map[token.indent] = node
+        parent = node_indent_map.get(token.indent - 1, root_node)
+        parent.children.append(node)
+    
+    return root_node
+    
+  def parse_quote_item(self) -> Parser.ASTQuoteItemNode:    
+    return Parser.ASTQuoteItemNode(children=self.parse_inline_block_quote())
+  
+  @dataclass
+  class ListStackItem:
+    node: Parser.ASTListNode
+    indent: int
+  
+  def parse_list(self) -> Parser.ASTListNode:
+    root = Parser.ASTListNode(ordered=self.consume(Lexer.ListItemToken).ordered)
+    root.children.append(Parser.ASTListItemNode(children=self.parse_inline()))
+    
+    list_stack: list[Parser.ListStackItem] = []
+    list_stack.append(Parser.ListStackItem(node=root, indent=0))
+    
+    while self.peek(1, Lexer.ListItemToken):
+      curr_token = self.consume(Lexer.ListItemToken)
+      curr_indent = min(list_stack[-1].indent + 1, curr_token.indent) # only allow 1 additional level at a time
+      last_indent= list_stack[-1].indent
+      if curr_indent > last_indent: # deeper indent
+        # create new node
+        node = Parser.ASTListNode(ordered=curr_token.ordered)
+        node.children.append(Parser.ASTListItemNode(children=self.parse_inline()))
+        
+        # append to last child of top (of stack) node
+        top_node_last_child = list_stack[-1].node.children[-1]
+        if isinstance(top_node_last_child, Parser.ASTListItemNode):
+          top_node_last_child.children.append(node)
+        else:
+          raise RuntimeError(f"Invalid last child of top node: {type(top_node_last_child)}")
+        
+        # append to stack
+        list_stack.append(Parser.ListStackItem(node=node, indent=curr_indent))
+      elif curr_indent < last_indent: # lost indentation
+        # pop from stack until we find current level
+        while list_stack[-1].indent > curr_indent:
+          list_stack.pop()
+        list_stack[-1].node.children.append(Parser.ASTListItemNode(children=self.parse_inline()))
+      else: # same indentation
+        list_stack[-1].node.children.append(Parser.ASTListItemNode(children=self.parse_inline()))
+  
+    return root
+  
+  def parse_horizontal_rule(self) -> Parser.ASTHorizontalRuleNode:
+    self.consume(Lexer.HorizontalRuleToken)
+    self.consume(Lexer.NewLineToken)
+    return Parser.ASTHorizontalRuleNode()
+  
+  def parse_image(self) -> Parser.ASTImageNode:
+    token = self.consume(Lexer.ImageToken)
+    self.consume(Lexer.NewLineToken)
+    return Parser.ASTImageNode(alt=token.alt, src=token.src)
+  
+  def parse_paragraph(self) -> Parser.ASTParagraphNode:
+    return Parser.ASTParagraphNode(children=self.parse_inline())
+  
+  INLINE_TOKENS: tuple[Type[Lexer.Token], ...] = (Lexer.TextToken, Lexer.CodeInlineToken, Lexer.LinkToken)
+  
+  def parse_inline(self) -> list[ASTNode]:
+    nodes: list[Parser.ASTNode] = []
+    
+    while self.peek_any(1, *Parser.INLINE_TOKENS) or (self.peek(1, Lexer.NewLineToken) and self.peek_any(2, *Parser.INLINE_TOKENS)):
+      if self.peek(1, Lexer.NewLineToken):
+        self.consume(Lexer.NewLineToken)
+        nodes.append(Parser.ASTTextNode(text='', bold=False, italic=False))
+        
+      nodes.append(self.parse_inline_single())
+    self.consume(Lexer.NewLineToken)
+    
+    return nodes
+  
+  def parse_inline_block_quote(self) -> list[ASTNode]:
+    nodes: list[Parser.ASTNode] = []
+    
+    while self.peek_any(1, *Parser.INLINE_TOKENS) or (self.peek(1, Lexer.NewLineToken) and self.peek(2, Lexer.BlockQuoteToken) and self.peek_any(3, *Parser.INLINE_TOKENS)):
+      if self.peek(1, Lexer.NewLineToken):
+        self.consume(Lexer.NewLineToken)
+        self.consume(Lexer.BlockQuoteToken)
+        nodes.append(Parser.ASTTextNode(text='', bold=True, italic=True))
+        
+      nodes.append(self.parse_inline_single())
+    self.consume(Lexer.NewLineToken)
+    
+    return nodes
+  
+  def parse_inline_single(self) -> ASTNode:
+    if self.peek(1, Lexer.TextToken):
+      text_token = self.consume(Lexer.TextToken)
+      return Parser.ASTTextNode(text=text_token.text, bold=text_token.bold, italic=text_token.italic)
+    elif self.peek(1, Lexer.CodeInlineToken):
+      code_token = self.consume(Lexer.CodeInlineToken)
+      return Parser.ASTCodeInlineNode(lang=code_token.lang, code=code_token.code)
+    elif self.peek(1, Lexer.LinkToken):
+      link_token = self.consume(Lexer.LinkToken)
+      return Parser.ASTLinkNode(text=link_token.text, href=link_token.href)
+    else:
+      raise RuntimeError(f"Invalid inline token type: {type(self.tks[self.tks_start])}")
+  
+  def peek(self, depth: int, tokenType: Type[Lexer.Token]) -> bool:
+    index = self.tks_start + depth - 1
+    if index >= len(self.tks):
+      return False
+    return isinstance(self.tks[index], tokenType)
+  
+  def peek_any(self, depth: int, *tokenTypes: Type[Lexer.Token]) -> bool:
+    for tokenType in tokenTypes:
+      if self.peek(depth, tokenType):
+        return True
+    return False
+  
+  TokenT = TypeVar("TokenT", bound=Lexer.Token)
+  
+  def consume(self, tokenType: Type[TokenT]) -> TokenT:
+    if self.tks_start == len(self.tks):
+      raise RuntimeError(f"Expected to find token type {tokenType} but did not find a token")
+    
+    token = self.tks[self.tks_start]
+    self.tks_start += 1
+    if not isinstance(token, tokenType):
+      raise RuntimeError(f"Expected to find token type {tokenType} but found {type(token)}")
+    
+    return token
