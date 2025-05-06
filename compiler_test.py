@@ -1,6 +1,6 @@
 import compiler
 
-def test_lexer_paragraph():
+def test_lexer_paragraph() -> None:
   assert(
     compiler.Lexer('text').tokenize() ==
     [

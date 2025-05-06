@@ -126,7 +126,7 @@ class Lexer:
     if not match: return False
     
     indent = 0
-    for ch in match.group(1):
+    for ch in str(match.group(1)):
       if ch == '>': indent += 1
       
     self.tks.append(Lexer.BlockQuoteToken(indent=indent))
@@ -218,10 +218,9 @@ class Lexer:
     
     # keep track of current substring
     currStr: list[str] = []
-    currPush = lambda: (
-      self.tks.append(Lexer.TextToken(text=''.join(currStr), bold=False, italic=False)),
+    def currPush() -> None:
+      self.tks.append(Lexer.TextToken(text=''.join(currStr), bold=False, italic=False))
       currStr.clear()
-    )
     
     while line:
       # == bold and italic ==
@@ -229,7 +228,7 @@ class Lexer:
       if match:
         if currStr: currPush()
         
-        self.tks.append(Lexer.TextToken(text=match.group(1).replace('*', '').replace('_', ''), bold=True, italic=True))
+        self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=True, italic=True))
         line = line[len(match.group(1)):]
         
         continue
@@ -239,7 +238,7 @@ class Lexer:
       if match:
         if currStr: currPush()
         
-        self.tks.append(Lexer.TextToken(text=match.group(1).replace('*', '').replace('_', ''), bold=True, italic=False))
+        self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=True, italic=False))
         line = line[len(match.group(1)):]
         
         continue
@@ -249,7 +248,7 @@ class Lexer:
       if match:
         if currStr: currPush()
         
-        self.tks.append(Lexer.TextToken(text=match.group(1).replace('*', '').replace('_', ''), bold=False, italic=True))
+        self.tks.append(Lexer.TextToken(text=str(match.group(1)).replace('*', '').replace('_', ''), bold=False, italic=True))
         line = line[len(match.group(1)):]
         
         continue
