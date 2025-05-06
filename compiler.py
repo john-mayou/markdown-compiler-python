@@ -128,8 +128,8 @@ class Lexer:
     # is an ending block. If there is no ending block, we would have returned False somewhere
     # above. In that case, we should try tokenizing a different token with the original self.md.
     
-    code = self.md[code_start: code_end + 1]
-    self.md = self.md[code_end + 4:] # move to after the ```
+    code = self.md[code_start: code_end + 2]
+    self.md = self.md[code_end + 5:] # move to after the ``` and \n
     self.tks.append(Lexer.CodeBlockToken(lang=match.group(1) or "", code=code))
     self.tks.append(Lexer.NewLineToken())
     
