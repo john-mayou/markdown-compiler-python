@@ -153,17 +153,13 @@ class Lexer:
     while self.md[spaces] == ' ':
       spaces += 1
       
-    match self.md[spaces]:
-      # un-ordered
-      case '*' | '-':
-        self.tks.append(Lexer.ListItemToken(indent=spaces // self.LIST_INDENT_SIZE, ordered=False, digit=-1))
-        self.md = self.md[spaces + 2:] # 2 = */- + space
-        
-      # ordered
-      case _:
-        # only support one digit for now
-        self.tks.append(Lexer.ListItemToken(indent=spaces // self.LIST_INDENT_SIZE, ordered=True, digit=int(self.md[spaces])))
-        self.md = self.md[spaces + 3:] # 3 = digit + period + space
+    if self.md[spaces] == '*' or self.md[spaces] == '-': # un-ordered
+      self.tks.append(Lexer.ListItemToken(indent=spaces // self.LIST_INDENT_SIZE, ordered=False, digit=-1))
+      self.md = self.md[spaces + 2:] # 2 = */- + space
+    else: # ordered
+      # only support one digit for now
+      self.tks.append(Lexer.ListItemToken(indent=spaces // self.LIST_INDENT_SIZE, ordered=True, digit=int(self.md[spaces])))
+      self.md = self.md[spaces + 3:] # 3 = digit + period + space
     
     self.tokenize_current_line()
     
@@ -178,13 +174,12 @@ class Lexer:
     while self.md[pointer] != '\n':
       pointer += 1
     hsizeCh = self.md[pointer + 1] # go to beginning of next line
-    match hsizeCh:
-      case '=':
-        self.tks.append(Lexer.HeaderToken(size=1))
-      case '-':
-        self.tks.append(Lexer.HeaderToken(size=2))
-      case _:
-        raise RuntimeError(f"Invalid char found for header alt: {hsizeCh}")
+    if hsizeCh == '=':
+      self.tks.append(Lexer.HeaderToken(size=1))
+    elif hsizeCh == '-':
+      self.tks.append(Lexer.HeaderToken(size=2))
+    else:
+      raise RuntimeError(f"Invalid char found for header alt: {hsizeCh}")
       
     self.tokenize_current_line()
     self.del_current_line() # ---/=== line
