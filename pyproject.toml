@@ -1,0 +1,10 @@
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_configs = true
+
+disallow_untyped_defs = true
+disallow_any_unimported = true
+disallow_any_expr = true
+warn_return_any = true
+warn_unreachable = true
