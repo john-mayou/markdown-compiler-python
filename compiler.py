@@ -611,7 +611,7 @@ class CodeGen:
     
     for child in node.children:
       if isinstance(child, Parser.ASTQuoteNode):
-        html.append(self.gen_quote_block(node))
+        html.append(self.gen_quote_block(child))
       elif isinstance(child, Parser.ASTQuoteItemNode):
         html.append(f"<p>{self.gen_line(child.children)}</p>")
       else:
