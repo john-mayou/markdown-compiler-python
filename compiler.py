@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Type, TypeVar, Union
 import re
 
-class Compiler():
+class Compiler:
   def compile(self, md: str) -> str:
     return self.gen(self.parse(self.tokenize(md)))
   
