@@ -278,7 +278,7 @@ class Lexer:
         continue
       
       # == link ==
-      match = re.match(r"\A\[(.*)\]\((.*)\)", line)
+      match = re.match(r"\A\[(.*?)\]\((.*?)\)", line)
       if match:
         if curr_str: curr_push()
         
